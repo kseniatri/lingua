@@ -148,7 +148,7 @@ enum EPUBImporter {
     }
 
     private static func attribute(_ name: String, in attributes: String) -> String? {
-        let pattern = "(?:^|\\\\s)" + NSRegularExpression.escapedPattern(for: name) + "\\\\s*=\\\\s*[\\\"']([^\\\"']+)[\\\"']"
+        let pattern = "(?:^|\\s)" + NSRegularExpression.escapedPattern(for: name) + "\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']"
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
               let match = regex.firstMatch(in: attributes, range: NSRange(attributes.startIndex..., in: attributes)),
               let range = Range(match.range(at: 1), in: attributes) else { return nil }
