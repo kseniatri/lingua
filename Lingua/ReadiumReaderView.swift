@@ -141,6 +141,62 @@ struct ReadiumReaderView: View {
 
 private struct ReadiumNavigatorContainer: UIViewControllerRepresentable {
     let navigator: EPUBNavigatorViewController
-    func makeUIViewController(context: Context) -> EPUBNavigatorViewController { navigator }
+    func makeCoordinator() -> Coordinator { Coordinator(navigator: navigator) }
+    func makeUIViewController(context: Context) -> EPUBNavigatorViewController {
+        context.coordinator.install(on: navigator)
+        return navigator
+    }
     func updateUIViewController(_ uiViewController: EPUBNavigatorViewController, context: Context) {}
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        private weak var navigator: EPUBNavigatorViewController?
+        private var pan: UIPanGestureRecognizer?
+
+        init(navigator: EPUBNavigatorViewController) { self.navigator = navigator }
+
+        func install(on navigator: EPUBNavigatorViewController) {
+            guard pan == nil else { return }
+            self.navigator = navigator
+            // Readium's default UIScrollView drag moves both spreads together. Disable
+            // that pan and use the navigator's animated transition instead: the new
+            // spread is laid out first, while a snapshot of the old spread slides away.
+            DispatchQueue.main.async { [weak self, weak navigator] in
+                guard let self, let navigator else { return }
+                self.disablePaginationScroll(in: navigator.view)
+                let gesture = UIPanGestureRecognizer(target: self, action: #selector(self.handlePan(_:)))
+                gesture.delegate = self
+                gesture.maximumNumberOfTouches = 1
+                navigator.view.addGestureRecognizer(gesture)
+                self.pan = gesture
+            }
+        }
+
+        private func disablePaginationScroll(in view: UIView) {
+            if view is WKWebView { return }
+            for child in view.subviews {
+                if let scroll = child as? UIScrollView, !(child is WKWebView) {
+                    scroll.isScrollEnabled = false
+                    scroll.panGestureRecognizer.isEnabled = false
+                }
+                disablePaginationScroll(in: child)
+            }
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool { false }
+
+        @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+            guard gesture.state == .ended, let navigator else { return }
+            let translation = gesture.translation(in: gesture.view)
+            let velocity = gesture.velocity(in: gesture.view)
+            guard abs(translation.x) > 45 || abs(velocity.x) > 250 else { return }
+            let forward = translation.x < 0
+            Task { @MainActor in
+                if forward {
+                    _ = await navigator.goForward(options: .animated)
+                } else {
+                    _ = await navigator.goBackward(options: .animated)
+                }
+            }
+        }
+    }
 }
