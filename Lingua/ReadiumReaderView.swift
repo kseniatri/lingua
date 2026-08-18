@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import WebKit
 import ReadiumNavigator
 import ReadiumShared
 
@@ -10,6 +11,8 @@ final class ReadiumReaderModel: NSObject, ObservableObject, EPUBNavigatorDelegat
     @Published var currentLocator: Locator?
     @Published var positions: [Locator] = []
     @Published var chapters: [ReadiumShared.Link] = []
+    @Published var translation: String?
+    @Published var translating = false
     private var preferences = EPUBPreferences.empty
 
     func load(book: Book) async {
@@ -32,9 +35,42 @@ final class ReadiumReaderModel: NSObject, ObservableObject, EPUBNavigatorDelegat
     func seek(to index: Int) { guard let navigator, positions.indices.contains(index) else { return }; Task { _ = await navigator.go(to: positions[index]) } }
     func go(to chapter: ReadiumShared.Link) { guard let navigator else { return }; Task { _ = await navigator.go(to: chapter) } }
     func setFontSize(_ value: Double) { preferences.fontSize = value; navigator?.submitPreferences(preferences) }
+    func translateSelection(_ selection: Selection) {
+        let text = selection.locator.text.highlight?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !text.isEmpty else { return }
+        translating = true
+        Task { @MainActor in
+            if #available(iOS 26.0, *) {
+                translation = await TranslationService.shared.translate(text, target: Locale.preferredLanguages.first?.split(separator: "-").first.map(String.init) ?? "ru") ?? "Не удалось перевести"
+            } else { translation = "Для перевода требуется iOS 26" }
+            translating = false
+        }
+    }
     func navigator(_ navigator: Navigator, locationDidChange locator: Locator) { currentLocator = locator }
     func navigator(_ navigator: Navigator, didJumpTo locator: Locator) { currentLocator = locator }
     func navigator(_ navigator: Navigator, presentError error: NavigatorError) { errorMessage = error.localizedDescription }
+    func navigator(_ navigator: SelectableNavigator, shouldShowMenuForSelection selection: Selection) -> Bool { translateSelection(selection); return false }
+    func navigator(_ navigator: EPUBNavigatorViewController, setupUserScripts userContentController: WKUserContentController) {
+        let script = """
+        (function(){
+          if (window.__linguaZoomInstalled) return; window.__linguaZoomInstalled = true;
+          var image = null, start = 1, startDistance = 0;
+          document.addEventListener('touchstart', function(e){
+            if (e.touches.length !== 2) return;
+            var a=e.touches[0], b=e.touches[1], x=(a.clientX+b.clientX)/2, y=(a.clientY+b.clientY)/2;
+            image = document.elementFromPoint(x,y); while(image && image.tagName !== 'IMG') image=image.parentElement;
+            if (!image) return; start=parseFloat(image.dataset.linguaScale||'1'); startDistance=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY); image.style.transformOrigin='center center';
+          }, {passive:true});
+          document.addEventListener('touchmove', function(e){
+            if (!image || e.touches.length !== 2) return;
+            var a=e.touches[0], b=e.touches[1], d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+            image.style.transform='scale('+Math.min(3,Math.max(1,start*d/startDistance))+')';
+          }, {passive:true});
+          document.addEventListener('touchend', function(){ if(image){ image.style.transform=''; image=null; } });
+        })();
+        """
+        userContentController.addUserScript(WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: false))
+    }
 
     private static func epubURL(for book: Book) -> URL? {
         if let path = book.importedEPUBPath, !path.isEmpty { return URL(fileURLWithPath: path) }
@@ -56,6 +92,11 @@ struct ReadiumReaderView: View {
             if let navigator = model.navigator {
                 ReadiumNavigatorContainer(navigator: navigator).ignoresSafeArea()
                 chrome
+                if let translation = model.translation {
+                    VStack { Spacer(); HStack(spacing: 10) { VStack(alignment: .leading, spacing: 4) { Text("Перевод").font(.caption.weight(.semibold)).foregroundStyle(.secondary); Text(translation).font(.body) }; Spacer(); Button { model.translation = nil; model.navigator?.clearSelection() } label: { Image(systemName: "xmark.circle.fill").font(.title3) } }.padding(16).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18)).padding(.horizontal, 16).padding(.bottom, 62) }
+                } else if model.translating {
+                    VStack { Spacer(); ProgressView("Перевод…").padding(16).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18)).padding(.bottom, 62) }
+                }
             } else if let error = model.errorMessage {
                 VStack(spacing: 16) { Image(systemName: "book.closed").font(.system(size: 42)); Text("Could not open this book").font(.headline); Text(error).font(.footnote).multilineTextAlignment(.center); Button("Back") { dismiss() }.buttonStyle(.borderedProminent) }.padding(32)
             } else { ProgressView("Opening book…") }
