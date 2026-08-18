@@ -1,0 +1,228 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 71;
+	objects = {
+		A11111111111111111111111 /* ZIPFoundation */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/weichsel/ZIPFoundation.git"; requirement = {kind = upToNextMajorVersion; minimumVersion = 0.9.20;}; };
+		A11111111111111111111112 /* ZIPFoundation */ = {isa = XCSwiftPackageProductDependency; package = A11111111111111111111111; productName = ZIPFoundation; };
+
+/* Begin PBXBuildFile section */
+		111111111111111111111111 /* LinguaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111111 /* LinguaApp.swift */; };
+		111111111111111111111112 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111112 /* Models.swift */; };
+		111111111111111111111113 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111113 /* LibraryView.swift */; };
+		111111111111111111111114 /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111114 /* ReaderView.swift */; };
+		111111111111111111111115 /* BookAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111115 /* BookAnalyzer.swift */; };
+		111111111111111111111119 /* TranslationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111119 /* TranslationService.swift */; };
+		111111111111111111111120 /* EPUBImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111120 /* EPUBImporter.swift */; };
+		111111111111111111111121 /* TextKitPaginator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111121 /* TextKitPaginator.swift */; };
+		111111111111111111111117 /* Books in Resources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111117 /* Books */; };
+		111111111111111111111118 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111118 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		211111111111111111111111 /* LinguaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinguaApp.swift; sourceTree = "<group>"; };
+		211111111111111111111112 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		211111111111111111111113 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		211111111111111111111114 /* ReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderView.swift; sourceTree = "<group>"; };
+		211111111111111111111115 /* BookAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookAnalyzer.swift; sourceTree = "<group>"; };
+		211111111111111111111119 /* TranslationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationService.swift; sourceTree = "<group>"; };
+		211111111111111111111120 /* EPUBImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBImporter.swift; sourceTree = "<group>"; };
+		211111111111111111111121 /* TextKitPaginator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextKitPaginator.swift; sourceTree = "<group>"; };
+		211111111111111111111116 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		211111111111111111111117 /* Books */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Books; sourceTree = "<group>"; };
+		211111111111111111111118 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		711111111111111111111111 /* Lingua.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lingua.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		311111111111111111111111 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		411111111111111111111111 /* Lingua */ = {
+			isa = PBXGroup;
+			children = (
+				411111111111111111111112 /* Lingua */,
+			);
+			name = Lingua;
+			sourceTree = "<group>";
+		};
+		411111111111111111111112 /* Lingua */ = {
+			isa = PBXGroup;
+			children = (
+				211111111111111111111111 /* LinguaApp.swift */,
+				211111111111111111111112 /* Models.swift */,
+				211111111111111111111113 /* LibraryView.swift */,
+				211111111111111111111114 /* ReaderView.swift */,
+				211111111111111111111115 /* BookAnalyzer.swift */,
+				211111111111111111111119 /* TranslationService.swift */,
+				211111111111111111111120 /* EPUBImporter.swift */,
+				211111111111111111111121 /* TextKitPaginator.swift */,
+				211111111111111111111116 /* Info.plist */,
+				211111111111111111111117 /* Books */,
+				211111111111111111111118 /* Assets.xcassets */,
+			);
+			path = Lingua;
+			sourceTree = "<group>";
+		};
+		911111111111111111111111 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				711111111111111111111111 /* Lingua.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		511111111111111111111111 /* Lingua */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 611111111111111111111112 /* Build configuration list for PBXNativeTarget "Lingua" */;
+			buildPhases = (
+				311111111111111111111113 /* Sources */,
+				311111111111111111111111 /* Frameworks */,
+				311111111111111111111112 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			packageProductDependencies = (A11111111111111111111112,);
+			name = Lingua;
+			productName = Lingua;
+			productReference = 711111111111111111111111 /* Lingua.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		811111111111111111111111 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+			};
+			buildConfigurationList = 611111111111111111111115 /* Build configuration list for PBXProject "Lingua" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 411111111111111111111111 /* Lingua */;
+			productRefGroup = 911111111111111111111111 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				511111111111111111111111 /* Lingua */,
+			);
+			packageReferences = (A11111111111111111111111,);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		311111111111111111111112 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (111111111111111111111117 /* Books in Resources */, 111111111111111111111118 /* Assets.xcassets in Resources */,);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		311111111111111111111113 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				111111111111111111111111 /* LinguaApp.swift in Sources */,
+				111111111111111111111112 /* Models.swift in Sources */,
+				111111111111111111111113 /* LibraryView.swift in Sources */,
+				111111111111111111111114 /* ReaderView.swift in Sources */,
+				111111111111111111111115 /* BookAnalyzer.swift in Sources */,
+				111111111111111111111119 /* TranslationService.swift in Sources */,
+				111111111111111111111120 /* EPUBImporter.swift in Sources */,
+				111111111111111111111121 /* TextKitPaginator.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		611111111111111111111113 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				DEVELOPMENT_TEAM = J9BF4APQNC;
+				INFOPLIST_FILE = Lingua/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.lingua;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		611111111111111111111114 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				DEVELOPMENT_TEAM = J9BF4APQNC;
+				INFOPLIST_FILE = Lingua/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.lingua;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		611111111111111111111116 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		611111111111111111111117 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		611111111111111111111112 /* Build configuration list for PBXNativeTarget "Lingua" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				611111111111111111111113 /* Debug */,
+				611111111111111111111114 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		611111111111111111111115 /* Build configuration list for PBXProject "Lingua" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				611111111111111111111116 /* Debug */,
+				611111111111111111111117 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 811111111111111111111111 /* Project object */;
+}
