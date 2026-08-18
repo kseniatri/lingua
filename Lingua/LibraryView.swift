@@ -46,11 +46,7 @@ struct LibraryView: View {
                 .padding(.bottom, 28)
             }
             .navigationDestination(item: $selectedBook) { book in
-                if book.importedEPUBPath != nil || book.textResource?.hasSuffix(".epub") == true {
-                    ReadiumReaderView(book: book)
-                } else {
-                    ReaderView(book: book)
-                }
+                ReaderView(book: book)
             }
             .confirmationDialog("Delete this book?", isPresented: Binding(get: { bookToDelete != nil }, set: { if !$0 { bookToDelete = nil } })) {
                 Button("Delete", role: .destructive) { if let book = bookToDelete { library.remove(book) }; bookToDelete = nil }
