@@ -15,7 +15,7 @@ final class ReadiumReaderModel: NSObject, ObservableObject, EPUBNavigatorDelegat
     @Published var translating = false
     private var preferences = EPUBPreferences.empty
 
-    func load(book: Book) async {
+    func load(book: Book, colorScheme: ColorScheme) async {
         guard let url = Self.epubURL(for: book) else { errorMessage = "EPUB file is unavailable."; return }
         do {
             let opened = try await ReadiumBookService.open(url: url)
@@ -23,12 +23,18 @@ final class ReadiumReaderModel: NSObject, ObservableObject, EPUBNavigatorDelegat
             let grouped = try await opened.publication.positionsByReadingOrder().get()
             positions = grouped.flatMap { $0 }
             chapters = opened.publication.manifest.tableOfContents
+            preferences.theme = colorScheme == .dark ? .dark : .light
             var config = EPUBNavigatorViewController.Configuration()
             config.preferences = preferences
             let vc = try EPUBNavigatorViewController(publication: opened.publication, initialLocation: nil, config: config)
             vc.delegate = self
             navigator = vc
         } catch { errorMessage = error.localizedDescription }
+    }
+
+    func updateTheme(_ colorScheme: ColorScheme) {
+        preferences.theme = colorScheme == .dark ? .dark : .light
+        navigator?.submitPreferences(preferences)
     }
 
     var pageIndex: Int { guard let currentLocator else { return 0 }; return positions.firstIndex(of: currentLocator) ?? 0 }
@@ -83,6 +89,7 @@ struct ReadiumReaderView: View {
     let book: Book
     @StateObject private var model = ReadiumReaderModel()
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showChapters = false
     @State private var showSettings = false
     @State private var fontSize = 100.0
@@ -101,7 +108,8 @@ struct ReadiumReaderView: View {
                 VStack(spacing: 16) { Image(systemName: "book.closed").font(.system(size: 42)); Text("Could not open this book").font(.headline); Text(error).font(.footnote).multilineTextAlignment(.center); Button("Back") { dismiss() }.buttonStyle(.borderedProminent) }.padding(32)
             } else { ProgressView("Opening book…") }
         }
-        .task(id: book.id) { await model.load(book: book) }
+        .task(id: book.id) { await model.load(book: book, colorScheme: colorScheme) }
+        .onChange(of: colorScheme) { _, newScheme in model.updateTheme(newScheme) }
         .navigationBarHidden(true)
         .sheet(isPresented: $showChapters) { chapterList }
         .sheet(isPresented: $showSettings) { settings }
