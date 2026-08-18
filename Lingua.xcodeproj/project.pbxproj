@@ -21,6 +21,7 @@
 		111111111111111111111120 /* EPUBImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111120 /* EPUBImporter.swift */; };
 		111111111111111111111121 /* TextKitPaginator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111121 /* TextKitPaginator.swift */; };
 		111111111111111111111122 /* ReadiumBookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111122 /* ReadiumBookService.swift */; };
+		111111111111111111111123 /* ReadiumReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111123 /* ReadiumReaderView.swift */; };
 		111111111111111111111117 /* Books in Resources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111117 /* Books */; };
 		111111111111111111111118 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111118 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -35,6 +36,7 @@
 		211111111111111111111120 /* EPUBImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBImporter.swift; sourceTree = "<group>"; };
 		211111111111111111111121 /* TextKitPaginator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextKitPaginator.swift; sourceTree = "<group>"; };
 		211111111111111111111122 /* ReadiumBookService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadiumBookService.swift; sourceTree = "<group>"; };
+		211111111111111111111123 /* ReadiumReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadiumReaderView.swift; sourceTree = "<group>"; };
 		211111111111111111111116 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		211111111111111111111117 /* Books */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Books; sourceTree = "<group>"; };
 		211111111111111111111118 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -72,6 +74,7 @@
 				211111111111111111111120 /* EPUBImporter.swift */,
 				211111111111111111111121 /* TextKitPaginator.swift */,
 				211111111111111111111122 /* ReadiumBookService.swift */,
+				211111111111111111111123 /* ReadiumReaderView.swift */,
 				211111111111111111111116 /* Info.plist */,
 				211111111111111111111117 /* Books */,
 				211111111111111111111118 /* Assets.xcassets */,
@@ -157,6 +160,7 @@
 				111111111111111111111120 /* EPUBImporter.swift in Sources */,
 				111111111111111111111121 /* TextKitPaginator.swift in Sources */,
 				111111111111111111111122 /* ReadiumBookService.swift in Sources */,
+				111111111111111111111123 /* ReadiumReaderView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
