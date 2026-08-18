@@ -94,6 +94,13 @@ enum EPUBImporter {
             .replacingOccurrences(of: "&gt;", with: ">")
             .replacingOccurrences(of: "&quot;", with: "\"")
             .replacingOccurrences(of: "&apos;", with: "'")
+            .replacingOccurrences(of: "&rsquo;", with: "’")
+            .replacingOccurrences(of: "&lsquo;", with: "‘")
+            .replacingOccurrences(of: "&rdquo;", with: "”")
+            .replacingOccurrences(of: "&ldquo;", with: "“")
+            .replacingOccurrences(of: "&mdash;", with: "—")
+            .replacingOccurrences(of: "&ndash;", with: "–")
+            .replacingOccurrences(of: "&hellip;", with: "…")
             .replacingOccurrences(of: "[ \t]+", with: " ", options: .regularExpression)
             .replacingOccurrences(of: "\n[ \t]+", with: "\n", options: .regularExpression)
             .replacingOccurrences(of: "(?i)(chapter\\s+[ivxlcdm0-9]+)(?:\\s+\\1)+", with: "$1", options: .regularExpression)
@@ -116,30 +123,45 @@ enum EPUBImporter {
         var opfData = Data()
         guard (try? blocking { try await archive.extract(opf) { opfData.append($0) } }) != nil,
               let opfText = String(data: opfData, encoding: .utf8) else { return htmlEntries }
-        let itemRegex = try? NSRegularExpression(pattern: "<item\\b[^>]*\\bid=[\\\"']([^\\\"']+)[\\\"'][^>]*\\bhref=[\\\"']([^\\\"']+)[\\\"'][^>]*>", options: [.caseInsensitive])
-        let refRegex = try? NSRegularExpression(pattern: "<itemref\\b[^>]*\\bidref=[\\\"']([^\\\"']+)[\\\"'][^>]*/?>", options: [.caseInsensitive])
+        let itemRegex = try? NSRegularExpression(pattern: "<item\\b([^>]*)/?>", options: [.caseInsensitive])
+        let refRegex = try? NSRegularExpression(pattern: "<itemref\\b([^>]*)/?>", options: [.caseInsensitive])
         guard let itemRegex, let refRegex else { return htmlEntries }
-        var manifest: [String: String] = [:]
+        struct ManifestItem { let href: String; let properties: String }
+        var manifest: [String: ManifestItem] = [:]
         for match in itemRegex.matches(in: opfText, range: NSRange(opfText.startIndex..., in: opfText)) {
-            if let idRange = Range(match.range(at: 1), in: opfText), let hrefRange = Range(match.range(at: 2), in: opfText) {
-                manifest[String(opfText[idRange])] = String(opfText[hrefRange]).removingPercentEncoding ?? String(opfText[hrefRange])
-            }
+            guard let attributesRange = Range(match.range(at: 1), in: opfText) else { continue }
+            let attributes = String(opfText[attributesRange])
+            guard let id = attribute("id", in: attributes), let href = attribute("href", in: attributes) else { continue }
+            manifest[id] = ManifestItem(href: href, properties: attribute("properties", in: attributes) ?? "")
         }
         let base = (opf.path as NSString).deletingLastPathComponent
         var ordered: [Entry] = []
         for match in refRegex.matches(in: opfText, range: NSRange(opfText.startIndex..., in: opfText)) {
-            guard let idRange = Range(match.range(at: 1), in: opfText), let href = manifest[String(opfText[idRange])] else { continue }
-            let lowerHref = href.lowercased()
-            // Navigation and cover XHTML are not reading content.
-            if lowerHref.contains("toc") || lowerHref.contains("nav") || lowerHref.contains("cover") { continue }
-            let target: String
-            if href.hasPrefix("OEBPS/") || href.hasPrefix("OPS/") {
-                target = href
-            } else {
-                target = (base as NSString).appendingPathComponent(href).replacingOccurrences(of: "//", with: "/")
-            }
-            if let entry = htmlEntries.first(where: { $0.path == target || ($0.path as NSString).lastPathComponent == (target as NSString).lastPathComponent }) { ordered.append(entry) }
+            guard let attributesRange = Range(match.range(at: 1), in: opfText) else { continue }
+            let attributes = String(opfText[attributesRange])
+            guard let idref = attribute("idref", in: attributes), let item = manifest[idref] else { continue }
+            if item.properties.split(whereSeparator: { $0 == " " || $0 == "\t" }).contains("nav") { continue }
+            let target = normalizedArchivePath((base as NSString).appendingPathComponent(item.href))
+            if let entry = allEntries.first(where: { normalizedArchivePath($0.path) == target }) { ordered.append(entry) }
         }
         return ordered.isEmpty ? htmlEntries.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending } : ordered
+    }
+
+    private static func attribute(_ name: String, in attributes: String) -> String? {
+        let pattern = "(?:^|\\\\s)" + NSRegularExpression.escapedPattern(for: name) + "\\\\s*=\\\\s*[\\\"']([^\\\"']+)[\\\"']"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+              let match = regex.firstMatch(in: attributes, range: NSRange(attributes.startIndex..., in: attributes)),
+              let range = Range(match.range(at: 1), in: attributes) else { return nil }
+        return String(attributes[range]).removingPercentEncoding ?? String(attributes[range])
+    }
+
+    private static func normalizedArchivePath(_ path: String) -> String {
+        var components: [String] = []
+        for component in (path.removingPercentEncoding ?? path).replacingOccurrences(of: "\\\\", with: "/").split(separator: "/") {
+            if component == "." { continue }
+            if component == ".." { if !components.isEmpty { components.removeLast() }; continue }
+            components.append(String(component))
+        }
+        return components.joined(separator: "/")
     }
 }
