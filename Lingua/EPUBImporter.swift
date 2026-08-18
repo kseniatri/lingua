@@ -1,15 +1,28 @@
 import Foundation
-import ZIPFoundation
+import ReadiumZIPFoundation
 
 enum EPUBImporter {
+    private static func blocking<T>(_ operation: @escaping () async throws -> T) throws -> T {
+        let semaphore = DispatchSemaphore(value: 0)
+        var result: Result<T, Error>!
+        Task {
+            do { result = .success(try await operation()) }
+            catch { result = .failure(error) }
+            semaphore.signal()
+        }
+        semaphore.wait()
+        return try result.get()
+    }
+
     static func extractXHTMLChapters(from url: URL) throws -> [URL] {
-        let archive = try Archive(url: url, accessMode: .read)
-        let entries = archive.filter {
+        let archive = try blocking { try await Archive(url: url, accessMode: .read) }
+        let allEntries = try blocking { try await archive.entries() }
+        let entries = allEntries.filter {
             let name = ($0.path as NSString).lastPathComponent.lowercased()
             return name.hasPrefix("ch") && name.hasSuffix(".xhtml")
         }.sorted { $0.path < $1.path }
         return try entries.map { entry in
-            var data = Data(); _ = try archive.extract(entry) { data.append($0) }
+            var data = Data(); _ = try blocking { try await archive.extract(entry) { data.append($0) } }
             var html = String(data: data, encoding: .utf8) ?? ""
             let imagePattern = "(<img[^>]+src=\\\"|<img[^>]+src=')([^\\\"']+)([\\\"'])"
             let regex = try NSRegularExpression(pattern: imagePattern, options: [.caseInsensitive])
@@ -18,8 +31,8 @@ enum EPUBImporter {
                 guard match.numberOfRanges >= 4, let srcRange = Range(match.range(at: 2), in: html) else { continue }
                 var path = String(html[srcRange]).replacingOccurrences(of: "../", with: "")
                 if !path.hasPrefix("OEBPS/") { path = "OEBPS/" + path }
-                guard let imageEntry = archive.first(where: { $0.path == path }) else { continue }
-                var image = Data(); _ = try archive.extract(imageEntry) { image.append($0) }
+                guard let imageEntry = allEntries.first(where: { $0.path == path }) else { continue }
+                var image = Data(); _ = try blocking { try await archive.extract(imageEntry) { image.append($0) } }
                 let mime = imageEntry.path.lowercased().hasSuffix(".png") ? "image/png" : "image/jpeg"
                 html.replaceSubrange(srcRange, with: "data:\(mime);base64,\(image.base64EncodedString())")
             }
@@ -31,11 +44,12 @@ enum EPUBImporter {
         }
     }
     static func extractImages(from url: URL) throws -> [URL] {
-        let archive = try Archive(url: url, accessMode: .read)
+        let archive = try blocking { try await Archive(url: url, accessMode: .read) }
+        let allEntries = try blocking { try await archive.entries() }
         var result: [URL] = []
-        for entry in archive where ["jpg", "jpeg", "png", "gif"].contains((entry.path as NSString).pathExtension.lowercased()) && !entry.path.lowercased().contains("cover") {
+        for entry in allEntries where ["jpg", "jpeg", "png", "gif"].contains((entry.path as NSString).pathExtension.lowercased()) && !entry.path.lowercased().contains("cover") {
             var data = Data()
-            _ = try archive.extract(entry) { data.append($0) }
+            _ = try blocking { try await archive.extract(entry) { data.append($0) } }
             let destination = FileManager.default.temporaryDirectory.appendingPathComponent((entry.path as NSString).lastPathComponent)
             try data.write(to: destination)
             result.append(destination)
@@ -43,26 +57,27 @@ enum EPUBImporter {
         return result
     }
     static func extractFirstImage(from url: URL) throws -> URL {
-        let archive = try Archive(url: url, accessMode: .read)
-        guard let entry = archive.first(where: { $0.path.lowercased().contains("cover") && ($0.path.lowercased().hasSuffix(".jpg") || $0.path.lowercased().hasSuffix(".jpeg") || $0.path.lowercased().hasSuffix(".png")) }) ?? archive.first(where: { $0.path.lowercased().hasSuffix(".jpg") || $0.path.lowercased().hasSuffix(".jpeg") || $0.path.lowercased().hasSuffix(".png") }) else {
+        let archive = try blocking { try await Archive(url: url, accessMode: .read) }
+        let allEntries = try blocking { try await archive.entries() }
+        guard let entry = allEntries.first(where: { $0.path.lowercased().contains("cover") && ($0.path.lowercased().hasSuffix(".jpg") || $0.path.lowercased().hasSuffix(".jpeg") || $0.path.lowercased().hasSuffix(".png")) }) ?? allEntries.first(where: { $0.path.lowercased().hasSuffix(".jpg") || $0.path.lowercased().hasSuffix(".jpeg") || $0.path.lowercased().hasSuffix(".png") }) else {
             throw NSError(domain: "EPUBImporter", code: 2)
         }
         var data = Data()
-        _ = try archive.extract(entry) { data.append($0) }
+        _ = try blocking { try await archive.extract(entry) { data.append($0) } }
         let destination = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + "." + (entry.path as NSString).pathExtension)
         try data.write(to: destination)
         return destination
     }
     static func extractText(from url: URL, progress: @escaping (Double) -> Void = { _ in }) throws -> URL {
-        let archive = try Archive(url: url, accessMode: .read)
+        let archive = try blocking { try await Archive(url: url, accessMode: .read) }
         let destination = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".txt")
         var html = ""
-        let allEntries = Array(archive)
+        let allEntries = try blocking { try await archive.entries() }
         let htmlEntries = allEntries.filter { $0.path.lowercased().hasSuffix(".xhtml") || $0.path.lowercased().hasSuffix(".html") }
         let entries = orderedSpineEntries(in: archive, allEntries: allEntries, htmlEntries: htmlEntries)
         for (index, entry) in entries.enumerated() {
             var data = Data()
-            _ = try archive.extract(entry) { data.append($0) }
+            _ = try blocking { try await archive.extract(entry) { data.append($0) } }
             // Keep each spine document separated so chapter headings from the
             // next XHTML file are not glued to the previous paragraph.
             html += "\n\n[EPUB_SPINE_BREAK]\n\n" + (String(data: data, encoding: .utf8) ?? "") + "\n\n"
@@ -99,7 +114,7 @@ enum EPUBImporter {
             return htmlEntries.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
         }
         var opfData = Data()
-        guard (try? archive.extract(opf) { opfData.append($0) }) != nil,
+        guard (try? blocking { try await archive.extract(opf) { opfData.append($0) } }) != nil,
               let opfText = String(data: opfData, encoding: .utf8) else { return htmlEntries }
         let itemRegex = try? NSRegularExpression(pattern: "<item\\b[^>]*\\bid=[\\\"']([^\\\"']+)[\\\"'][^>]*\\bhref=[\\\"']([^\\\"']+)[\\\"'][^>]*>", options: [.caseInsensitive])
         let refRegex = try? NSRegularExpression(pattern: "<itemref\\b[^>]*\\bidref=[\\\"']([^\\\"']+)[\\\"'][^>]*/?>", options: [.caseInsensitive])

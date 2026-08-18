@@ -5,8 +5,11 @@
 	};
 	objectVersion = 71;
 	objects = {
-		A11111111111111111111111 /* ZIPFoundation */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/weichsel/ZIPFoundation.git"; requirement = {kind = upToNextMajorVersion; minimumVersion = 0.9.20;}; };
-		A11111111111111111111112 /* ZIPFoundation */ = {isa = XCSwiftPackageProductDependency; package = A11111111111111111111111; productName = ZIPFoundation; };
+		A22222222222222222222221 /* Readium Swift Toolkit */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/readium/swift-toolkit.git"; requirement = {kind = exactVersion; version = 3.9.0;}; };
+		A22222222222222222222220 /* ReadiumZIPFoundation */ = {isa = XCSwiftPackageProductDependency; package = A22222222222222222222221; productName = ReadiumZIPFoundation; };
+		A22222222222222222222222 /* ReadiumShared */ = {isa = XCSwiftPackageProductDependency; package = A22222222222222222222221; productName = ReadiumShared; };
+		A22222222222222222222223 /* ReadiumStreamer */ = {isa = XCSwiftPackageProductDependency; package = A22222222222222222222221; productName = ReadiumStreamer; };
+		A22222222222222222222224 /* ReadiumNavigator */ = {isa = XCSwiftPackageProductDependency; package = A22222222222222222222221; productName = ReadiumNavigator; };
 
 /* Begin PBXBuildFile section */
 		111111111111111111111111 /* LinguaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211111111111111111111111 /* LinguaApp.swift */; };
@@ -96,7 +99,7 @@
 			);
 			dependencies = (
 			);
-			packageProductDependencies = (A11111111111111111111112,);
+			packageProductDependencies = (A22222222222222222222220, A22222222222222222222222, A22222222222222222222223, A22222222222222222222224,);
 			name = Lingua;
 			productName = Lingua;
 			productReference = 711111111111111111111111 /* Lingua.app */;
@@ -124,7 +127,7 @@
 			targets = (
 				511111111111111111111111 /* Lingua */,
 			);
-			packageReferences = (A11111111111111111111111,);
+			packageReferences = (A22222222222222222222221,);
 		};
 /* End PBXProject section */
 
