@@ -75,13 +75,15 @@ enum EPUBImporter {
         let allEntries = try blocking { try await archive.entries() }
         let htmlEntries = allEntries.filter { $0.path.lowercased().hasSuffix(".xhtml") || $0.path.lowercased().hasSuffix(".html") }
         let entries = orderedSpineEntries(in: archive, allEntries: allEntries, htmlEntries: htmlEntries)
+        let tocTitles = tocTitles(in: archive, allEntries: allEntries)
         for (index, entry) in entries.enumerated() {
             var data = Data()
             _ = try blocking { try await archive.extract(entry) { data.append($0) } }
             // Keep each spine document separated so chapter headings from the
             // next XHTML file are not glued to the previous paragraph.
             var document = String(data: data, encoding: .utf8) ?? ""
-            let chapterTitle = titleFromHeading(in: document)
+            let fileName = (entry.path as NSString).lastPathComponent.lowercased()
+            let chapterTitle = titleFromHeading(in: document) ?? tocTitles[fileName]
             // The XHTML title belongs to the document metadata, not to the
             // readable body. Keeping it here made the book title appear a
             // second time above the first paragraph of every spine item.
@@ -160,6 +162,28 @@ enum EPUBImporter {
             if let entry = allEntries.first(where: { normalizedArchivePath($0.path) == target }) { ordered.append(entry) }
         }
         return ordered.isEmpty ? htmlEntries.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending } : ordered
+    }
+
+    private static func tocTitles(in archive: Archive, allEntries: [Entry]) -> [String: String] {
+        guard let ncx = allEntries.first(where: { $0.path.lowercased().hasSuffix(".ncx") }) else { return [:] }
+        var data = Data()
+        guard (try? blocking { try await archive.extract(ncx) { data.append($0) } }) != nil,
+              let xml = String(data: data, encoding: .utf8) else { return [:] }
+        let pattern = #"(?is)<navPoint\b[^>]*>.*?<navLabel[^>]*>\s*<text[^>]*>\s*(.*?)\s*</text>.*?<content\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*/?>.*?</navPoint>"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [:] }
+        var result: [String: String] = [:]
+        for match in regex.matches(in: xml, range: NSRange(xml.startIndex..., in: xml)) {
+            guard let titleRange = Range(match.range(at: 1), in: xml),
+                  let sourceRange = Range(match.range(at: 2), in: xml) else { continue }
+            let title = String(xml[titleRange])
+                .replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
+                .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let source = String(xml[sourceRange]).components(separatedBy: "#").first ?? ""
+            let fileName = (source as NSString).lastPathComponent.lowercased()
+            if !title.isEmpty && !fileName.isEmpty { result[fileName] = title }
+        }
+        return result
     }
 
     private static func attribute(_ name: String, in attributes: String) -> String? {

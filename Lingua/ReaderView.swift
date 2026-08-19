@@ -295,6 +295,7 @@ struct ReaderView: View {
                         }
                     }
                     .foregroundStyle(.primary)
+                    .listRowBackground(entry.page == currentChapterPage ? Color.accentColor.opacity(0.14) : Color.clear)
                 }
                 .navigationTitle("Chapters")
                 .navigationBarTitleDisplayMode(.inline)
@@ -649,6 +650,10 @@ struct ReaderView: View {
             previousTitle = item.title
         }
         return result
+    }
+
+    private var currentChapterPage: Int {
+        chapterEntries.last(where: { $0.page <= safePage })?.page ?? chapterEntries.first?.page ?? 0
     }
 
     private var readerTextSize: CGFloat {
