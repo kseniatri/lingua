@@ -144,12 +144,12 @@ struct ReaderView: View {
                         if nextPage >= 0 && nextPage < displayPages.count && pageOffset != 0 {
                             pageView(index: nextPage, item: displayPages[nextPage])
                         } else {
-                            pageView(index: page, item: displayPages[page])
+                            pageView(index: safePage, item: displayPages[safePage])
                         }
                         if pageOffset == 0 {
-                            pageView(index: page, item: displayPages[page])
+                            pageView(index: safePage, item: displayPages[safePage])
                         } else {
-                            pageView(index: page, item: displayPages[page])
+                            pageView(index: safePage, item: displayPages[safePage])
                                 .offset(x: pageOffset)
                         }
                     }
@@ -234,7 +234,7 @@ struct ReaderView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .padding(.horizontal, 22)
-                    .padding(.top, 18)
+                    .padding(.top, 5)
                     .padding(.bottom, 12)
                     .clipped()
                     Spacer(minLength: 0)
@@ -326,7 +326,7 @@ struct ReaderView: View {
                     Spacer()
                     Button { showSettings = true } label: { Image(systemName: "textformat.size").font(.system(size: 17, weight: .semibold)) }
                 }
-            }.foregroundStyle(.secondary).padding(.horizontal, 22).padding(.vertical, 12)
+            }.foregroundStyle(.secondary).padding(.horizontal, 22).padding(.vertical, 7)
             if item.paragraphs.first != nil && (index == 0 || displayPages[index - 1].title != item.title) {
                 Text(item.title).font(.system(size: 28, weight: .bold, design: .serif)).foregroundStyle(.primary).frame(maxWidth: .infinity, alignment: .center).padding(.bottom, 8)
             }
@@ -388,7 +388,7 @@ struct ReaderView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-            }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(.horizontal, 44).padding(.top, 18).padding(.bottom, 12).clipped()
+            }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(.horizontal, 44).padding(.top, 5).padding(.bottom, 12).clipped()
             Spacer(minLength: 0)
             HStack(spacing: 8) {
                 Text("\(index + 1) of \(displayPages.count)")
@@ -431,7 +431,7 @@ struct ReaderView: View {
     private func makePages(for source: ArraySlice<(title: String, paragraphs: [String])>) -> [(title: String, paragraphs: [String])] {
         let width = max(280, UIScreen.main.bounds.width - 88)
         // Header and footer leave most of the screen available for text.
-        let height = max(500, UIScreen.main.bounds.height - 235)
+        let height = max(500, UIScreen.main.bounds.height - 205)
         return source.flatMap { chapter in
             let sourceText = normalizeEPUBText(chapter.paragraphs.joined(separator: "\n\n"))
             let imageRegex = try? NSRegularExpression(pattern: "\\[IMAGE:[^\\]]+\\]", options: [])
@@ -514,6 +514,11 @@ struct ReaderView: View {
         pageCache
     }
 
+    private var safePage: Int {
+        guard !displayPages.isEmpty else { return 0 }
+        return min(max(page, 0), displayPages.count - 1)
+    }
+
     private func loadPagesProgressively() {
         guard pageCache.isEmpty else { isPreparingPages = false; return }
         let source = chapters
@@ -526,6 +531,9 @@ struct ReaderView: View {
                 let chapter = source[offset]
                 let next = makePages(for: [chapter][...])
                 pageCache.append(contentsOf: next)
+                if page >= pageCache.count {
+                    page = max(0, pageCache.count - 1)
+                }
                 restoreReadingPositionIfAvailable()
                 await Task.yield()
             }
@@ -609,7 +617,7 @@ struct ReaderView: View {
         if sentences.isEmpty { sentences = [text] }
         var chunks: [String] = [], current = ""
         let width = max(280, UIScreen.main.bounds.width - 44)
-        let height = max(500, UIScreen.main.bounds.height - 300)
+        let height = max(500, UIScreen.main.bounds.height - 270)
         let font = UIFont(name: "Times New Roman", size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
         func fits(_ value: String) -> Bool {
             let rect = (value as NSString).boundingRect(with: CGSize(width: width, height: .greatestFiniteMagnitude), options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: [.font: font], context: nil)
