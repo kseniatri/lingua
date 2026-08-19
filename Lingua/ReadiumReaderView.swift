@@ -103,12 +103,14 @@ struct ReadiumReaderView: View {
     @EnvironmentObject private var library: LibraryStore
     @State private var showChapters = false
     @State private var showSettings = false
+    @State private var showPageScrubber = false
     @State private var fontSize = 100.0
 
     var body: some View {
         ZStack {
             if let navigator = model.navigator {
-                ReadiumNavigatorContainer(navigator: navigator).ignoresSafeArea()
+                ReadiumNavigatorContainer(navigator: navigator)
+                    .ignoresSafeArea()
                 chrome
                 if let translation = model.translation {
                     VStack { Spacer(); HStack(spacing: 10) { VStack(alignment: .leading, spacing: 4) { Text("Перевод").font(.caption.weight(.semibold)).foregroundStyle(.secondary); Text(translation).font(.body) }; Spacer(); Button { model.translation = nil; model.navigator?.clearSelection() } label: { Image(systemName: "xmark.circle.fill").font(.title3) } }.padding(16).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18)).padding(.horizontal, 16).padding(.bottom, 62) }
@@ -134,17 +136,67 @@ struct ReadiumReaderView: View {
     private var chrome: some View {
         VStack(spacing: 0) {
             HStack {
-                Button { dismiss() } label: { Image(systemName: "chevron.left").font(.title2.weight(.semibold)) }
-                Spacer(); Text(book.title).lineLimit(1).font(.headline); Spacer()
-                Button { showSettings = true } label: { Text("AA").font(.headline.weight(.bold)) }
-            }.foregroundStyle(.secondary).padding(.horizontal, 22).padding(.top, 8).padding(.bottom, 12).background(.ultraThinMaterial)
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 21, weight: .medium))
+                        .frame(width: 34, height: 34)
+                }
+                Spacer(minLength: 12)
+                Text(shortTitle)
+                    .font(.system(size: 17, weight: .medium))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(maxWidth: .infinity)
+                Spacer(minLength: 12)
+                Button { showSettings = true } label: {
+                    Text("AA")
+                        .font(.system(size: 19, weight: .bold))
+                        .frame(width: 42, height: 34)
+                }
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
+            .background(Color(.systemBackground).opacity(0.94))
             Spacer()
-            HStack(spacing: 12) {
-                Text("\(min(model.pageIndex + 1, max(model.positions.count, 1))) of \(model.positions.count)").font(.footnote.monospacedDigit()).foregroundStyle(.secondary)
-                Slider(value: Binding(get: { Double(model.pageIndex) }, set: { model.seek(to: Int($0.rounded())) }), in: 0...Double(max(model.positions.count - 1, 1)), step: 1)
-                Button { showChapters = true } label: { Image(systemName: "list.bullet").font(.headline) }
-            }.padding(.horizontal, 22).padding(.top, 10).padding(.bottom, 8).background(.ultraThinMaterial)
+            if showPageScrubber {
+                HStack(spacing: 12) {
+                    Slider(value: Binding(get: { Double(model.pageIndex) }, set: { model.seek(to: Int($0.rounded())) }), in: 0...Double(max(model.positions.count - 1, 1)), step: 1)
+                    Button { showChapters = true } label: {
+                        Image(systemName: "list.bullet")
+                            .font(.system(size: 18, weight: .medium))
+                            .frame(width: 32, height: 32)
+                    }
+                }
+                .padding(.horizontal, 22)
+                .padding(.top, 10)
+            }
+            HStack(spacing: 9) {
+                Text("\(min(model.pageIndex + 1, max(model.positions.count, 1))) of \(max(model.positions.count, 1))")
+                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                ProgressView(value: Double(model.pageIndex + 1), total: Double(max(model.positions.count, 1)))
+                    .progressViewStyle(.linear)
+                    .tint(.teal)
+                    .frame(width: 48, height: 4)
+            }
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture { withAnimation(.easeOut(duration: 0.18)) { showPageScrubber.toggle() } }
+            .padding(.top, 9)
+            .padding(.bottom, 22)
+            .background(Color(.systemBackground).opacity(0.94))
         }
+    }
+
+    private var shortTitle: String {
+        let normalized = book.title
+            .replacingOccurrences(of: "_", with: " ")
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if normalized.count <= 34 { return normalized }
+        return String(normalized.prefix(31)).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
     }
 
     private var chapterList: some View {
