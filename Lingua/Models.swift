@@ -61,6 +61,38 @@ final class LibraryStore: ObservableObject {
         persist()
     }
 
+    /// Stores the original EPUB without flattening it into extracted text.
+    /// Readium uses this file later and resolves its spine, TOC, styles and
+    /// image resources for each publication.
+    func addImportedEPUB(title: String, epubURL: URL) {
+        let cleanTitle = title
+            .replacingOccurrences(of: "_", with: " ")
+            .replacingOccurrences(of: "OceanofPDF.com", with: "")
+            .replacingOccurrences(of: "  ", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let id = UUID()
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let destination = documents
+            .appendingPathComponent("LinguaBooks", isDirectory: true)
+            .appendingPathComponent("\(id.uuidString).epub")
+        try? FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? FileManager.default.removeItem(at: destination)
+        guard (try? FileManager.default.copyItem(at: epubURL, to: destination)) != nil else { return }
+
+        books.insert(
+            Book(id: id,
+                 title: cleanTitle.isEmpty ? "Imported book" : cleanTitle,
+                 author: "Imported EPUB",
+                 level: .b1,
+                 progress: 0,
+                 colorHex: "#DCE3EF",
+                 isImported: true,
+                 importedEPUBPath: destination.path),
+            at: 0
+        )
+        persist()
+    }
+
     func remove(_ book: Book) {
         books.removeAll { $0.id == book.id }
         persist()

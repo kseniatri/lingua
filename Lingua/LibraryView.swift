@@ -46,7 +46,10 @@ struct LibraryView: View {
                 .padding(.bottom, 28)
             }
             .navigationDestination(item: $selectedBook) { book in
-                ReaderView(book: book)
+                // Readium is the primary EPUB engine. It reads the original
+                // publication (spine, TOC, CSS and images) instead of flattening
+                // a book into extracted text.
+                ReadiumReaderView(book: book)
             }
             .confirmationDialog("Delete this book?", isPresented: Binding(get: { bookToDelete != nil }, set: { if !$0 { bookToDelete = nil } })) {
                 Button("Delete", role: .destructive) { if let book = bookToDelete { library.remove(book) }; bookToDelete = nil }
@@ -58,20 +61,11 @@ struct LibraryView: View {
                     let title = url.deletingPathExtension().lastPathComponent
                     importingTitle = title
                     importProgress = 0
-                    Task {
-                        let textURL = await Task.detached(priority: .userInitiated) {
-                            try? EPUBImporter.extractText(from: url) { value in
-                                Task { @MainActor in importProgress = value }
-                            }
-                        }.value
-                        if let textURL {
-                            await MainActor.run {
-                                library.addImportedBook(title: title, textURL: textURL, epubURL: url)
-                                importProgress = nil
-                            }
-                        } else {
-                            await MainActor.run { importProgress = nil }
-                        }
+                    Task { @MainActor in
+                        // Keep the EPUB intact. Readium performs the actual
+                        // parsing asynchronously when the reader is opened.
+                        library.addImportedEPUB(title: title, epubURL: url)
+                        importProgress = nil
                         url.stopAccessingSecurityScopedResource()
                     }
                 }

@@ -23,10 +23,12 @@ final class ReadiumReaderModel: NSObject, ObservableObject, EPUBNavigatorDelegat
             let grouped = try await opened.publication.positionsByReadingOrder().get()
             positions = grouped.flatMap { $0 }
             chapters = opened.publication.manifest.tableOfContents
+            let savedIndex = UserDefaults.standard.integer(forKey: Self.positionKey(for: book))
+            let initialLocation = positions.indices.contains(savedIndex) ? positions[savedIndex] : nil
             preferences.theme = colorScheme == .dark ? .dark : .light
             var config = EPUBNavigatorViewController.Configuration()
             config.preferences = preferences
-            let vc = try EPUBNavigatorViewController(publication: opened.publication, initialLocation: nil, config: config)
+            let vc = try EPUBNavigatorViewController(publication: opened.publication, initialLocation: initialLocation, config: config)
             vc.delegate = self
             navigator = vc
         } catch { errorMessage = error.localizedDescription }
@@ -78,6 +80,14 @@ final class ReadiumReaderModel: NSObject, ObservableObject, EPUBNavigatorDelegat
         userContentController.addUserScript(WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: false))
     }
 
+    private static func positionKey(for book: Book) -> String {
+        "lingua.readium.position.\(book.id.uuidString)"
+    }
+
+    func savePosition(for book: Book) {
+        UserDefaults.standard.set(pageIndex, forKey: Self.positionKey(for: book))
+    }
+
     private static func epubURL(for book: Book) -> URL? {
         if let path = book.importedEPUBPath, !path.isEmpty { return URL(fileURLWithPath: path) }
         if let resource = book.textResource, resource.hasSuffix(".epub") { return Bundle.main.url(forResource: resource, withExtension: nil, subdirectory: "Books") }
@@ -90,6 +100,7 @@ struct ReadiumReaderView: View {
     @StateObject private var model = ReadiumReaderModel()
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var library: LibraryStore
     @State private var showChapters = false
     @State private var showSettings = false
     @State private var fontSize = 100.0
@@ -109,6 +120,11 @@ struct ReadiumReaderView: View {
             } else { ProgressView("Opening book…") }
         }
         .task(id: book.id) { await model.load(book: book, colorScheme: colorScheme) }
+        .onChange(of: model.currentLocator) { _, _ in
+            model.savePosition(for: book)
+            let total = max(model.positions.count, 1)
+            library.updateProgress(for: book, value: Double(model.pageIndex + 1) / Double(total))
+        }
         .onChange(of: colorScheme) { _, newScheme in model.updateTheme(newScheme) }
         .navigationBarHidden(true)
         .sheet(isPresented: $showChapters) { chapterList }
