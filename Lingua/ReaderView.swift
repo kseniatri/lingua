@@ -373,7 +373,8 @@ struct ReaderView: View {
                             )
                             .layoutPriority(2)
                     } else {
-                        WordParagraph(text: block, fontSize: readerTextSize, highlightedWord: selectedWord, highlightedSentence: selectedSentence, dropCap: entry.offset == contentBlocks.first?.offset && item.title != "Reading") { word in
+                        let isChapterStart = index == 0 || displayPages[index - 1].title != item.title
+                        WordParagraph(text: block, fontSize: readerTextSize, highlightedWord: selectedWord, highlightedSentence: selectedSentence, dropCap: isChapterStart && entry.offset == contentBlocks.first?.offset && item.title != "Reading") { word in
                             selectedWord = word
                             selectedSentence = sentence(containing: word, in: block)
                             selectedTranslationText = word
@@ -672,10 +673,14 @@ struct WordParagraph: View {
                     let word = String(rawWord)
                     let first = String(word.prefix(1))
                     let remainder = String(word.dropFirst())
-                    HStack(alignment: .firstTextBaseline, spacing: 0) {
-                        Text(first).font(.system(size: fontSize * 2.8, weight: .bold, design: .serif))
-                        Text(remainder + " ").font(.system(size: fontSize, design: .serif))
-                    }
+                    // Keep the enlarged initial inline with the first line.
+                    // A separate tall view makes FlowLayout reserve an empty
+                    // rectangle and pushes the following text down.
+                    (Text(first)
+                        .font(.system(size: fontSize * 2.35, weight: .bold, design: .serif))
+                        .baselineOffset(-fontSize * 0.18)
+                     + Text(remainder + " ")
+                        .font(.system(size: fontSize, design: .serif)))
                     .foregroundStyle(.primary)
                     .background(highlighted ? Color.yellow.opacity(0.55) : Color.clear)
                     .contentShape(Rectangle())
