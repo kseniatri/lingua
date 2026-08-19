@@ -494,18 +494,18 @@ struct ReaderView: View {
 
     private func normalizeEPUBText(_ value: String) -> String {
         var text = value
-        // EPUB exports often leave a second full stop after a closing quote.
-        text = text.replacingOccurrences(of: "\".", with: "\"")
-        text = text.replacingOccurrences(of: ".\".", with: ".\"")
-        text = text.replacingOccurrences(of: "!\".", with: "!\"")
-        text = text.replacingOccurrences(of: "?\".", with: "?\"")
-        text = text.replacingOccurrences(of: ". \"", with: ".\"")
-        text = text.replacingOccurrences(of: "! \"", with: "!\"")
-        text = text.replacingOccurrences(of: "? \"", with: "?\"")
-        if let quoteRegex = try? NSRegularExpression(pattern: "\\s+\"(?=\\s*[.!?,;:]|\\s*$)") {
-            text = quoteRegex.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "\"")
+        // EPUB exports often leave spaces and a second full stop after a closing quote.
+        // Handle both straight and typographic quotes before pagination, otherwise the
+        // paginator can add the same sentence-ending punctuation a second time.
+        if let closingQuoteSpace = try? NSRegularExpression(pattern: #"([.!?])\s+(["”»])"#) {
+            text = closingQuoteSpace.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "$1$2")
         }
-        text = text.replacingOccurrences(of: "\" ", with: "\"")
+        if let duplicateAfterQuote = try? NSRegularExpression(pattern: #"([.!?])\s*(["”»])\s*\."#) {
+            text = duplicateAfterQuote.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "$1$2")
+        }
+        if let quoteRegex = try? NSRegularExpression(pattern: #"\s+(["”»])(?=\s*[.!?,;:]|\s*$)"#) {
+            text = quoteRegex.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "$1")
+        }
         text = text.replacingOccurrences(of: "  ", with: " ")
         return text
     }

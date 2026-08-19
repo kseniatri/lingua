@@ -14,7 +14,15 @@ enum TextKitPaginator {
         var pages: [String] = [], current = ""
         for paragraph in paragraphs {
             let protectedParagraph = paragraph.replacingOccurrences(of: ".jpg", with: "§jpg").replacingOccurrences(of: ".jpeg", with: "§jpeg").replacingOccurrences(of: ".png", with: "§png")
-            let sentences = protectedParagraph.split(separator: ".", omittingEmptySubsequences: true).map { $0.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "§", with: ".") + "." }
+            let sentences = protectedParagraph.split(separator: ".", omittingEmptySubsequences: true).map {
+                let fragment = $0.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "§", with: ".")
+                // A closing quote may already contain !, ? or . inside it. Do not
+                // append another period after that quote.
+                if let last = fragment.last, ["\"", "”", "»"].contains(last), fragment.dropLast().last.map({ [".", "!", "?"].contains($0) }) == true {
+                    return fragment
+                }
+                return fragment + "."
+            }
             for sentence in (sentences.isEmpty ? [paragraph] : sentences) {
                 if current.isEmpty && !fits(sentence) {
                     var chunk = ""
