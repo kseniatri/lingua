@@ -43,7 +43,9 @@ final class LibraryStore: ObservableObject {
 
     private static let bundledBooks = [
         Book(id: UUID(), title: "The Wonderful Wizard of Oz", author: "L. Frank Baum", level: .a2, progress: 0, colorHex: "#D7E7E4", coverURL: "https://covers.openlibrary.org/isbn/9780451530640-L.jpg", textResource: "baum-wonderful-wizard-of-oz.epub"),
-        Book(id: UUID(), title: "The Testament", author: "John Grisham", level: .c1, progress: 0, colorHex: "#DCE3EF", textResource: "the-testament-john-grisham.epub")
+        Book(id: UUID(), title: "The Testament", author: "John Grisham", level: .c1, progress: 0, colorHex: "#DCE3EF", textResource: "the-testament-john-grisham.epub"),
+        Book(id: UUID(), title: "The Bullet That Missed", author: "Richard Osman", level: .b2, progress: 0, colorHex: "#E8DDF0", textResource: "the-bullet-that-missed.epub"),
+        Book(id: UUID(), title: "The Secret of Secrets", author: "Dan Brown", level: .b2, progress: 0, colorHex: "#E9E0D2", textResource: "the-secret-of-secrets.epub")
     ]
 
     private static func mergedWithBundledBooks(_ saved: [Book]) -> [Book] {
