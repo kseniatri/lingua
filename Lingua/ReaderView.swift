@@ -789,25 +789,35 @@ struct FlowLayout: Layout {
     var dropCap = false
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = proposal.width ?? 300
-        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0, row = 0
+        guard !subviews.isEmpty else { return CGSize(width: width, height: 0) }
+        let capWidth = dropCap ? min(58, width * 0.18) : 0
+        let normalHeight = subviews.dropFirst().first?.sizeThatFits(.unspecified).height ?? 20
+        var x: CGFloat = dropCap ? capWidth : 0, y: CGFloat = 0, row = 0
         for (index, subview) in subviews.enumerated() {
+            if dropCap && index == 0 { continue }
             let size = subview.sizeThatFits(.unspecified)
-            let leftInset = dropCap && index > 0 && row < 3 ? min(58, width * 0.18) : 0
-            if x == 0 { x = leftInset }
-            if x + size.width > width && x > leftInset { x = 0; y += rowHeight + spacing; rowHeight = 0; row += 1; if dropCap && row < 3 { x = min(58, width * 0.18) } }
-            x += size.width + spacing; rowHeight = max(rowHeight, size.height)
+            let leftInset = dropCap && row < 3 ? capWidth : 0
+            if x + size.width > width && x > leftInset { x = leftInset; y += normalHeight + spacing; row += 1 }
+            x += size.width + spacing
         }
-        return CGSize(width: width, height: y + rowHeight)
+        return CGSize(width: width, height: y + normalHeight)
     }
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX, y = bounds.minY, rowHeight: CGFloat = 0, row = 0
+        guard !subviews.isEmpty else { return }
+        let capWidth = dropCap ? min(58, bounds.width * 0.18) : 0
+        let normalHeight = subviews.dropFirst().first?.sizeThatFits(.unspecified).height ?? 20
+        if dropCap {
+            let capSize = subviews[0].sizeThatFits(.unspecified)
+            subviews[0].place(at: CGPoint(x: bounds.minX, y: bounds.minY), proposal: ProposedViewSize(capSize))
+        }
+        var x = bounds.minX + (dropCap ? capWidth : 0), y = bounds.minY, row = 0
         for (index, subview) in subviews.enumerated() {
+            if dropCap && index == 0 { continue }
             let size = subview.sizeThatFits(.unspecified)
-            let leftInset = dropCap && index > 0 && row < 3 ? min(58, bounds.width * 0.18) : 0
-            if x == bounds.minX { x += leftInset }
-            if x + size.width > bounds.maxX && x > bounds.minX + leftInset { x = bounds.minX + (row < 3 && dropCap ? leftInset : 0); y += rowHeight + spacing; rowHeight = 0; row += 1 }
+            let leftInset = dropCap && row < 3 ? capWidth : 0
+            if x + size.width > bounds.maxX && x > bounds.minX + leftInset { x = bounds.minX + leftInset; y += normalHeight + spacing; row += 1 }
             subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing; rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
         }
     }
 }
