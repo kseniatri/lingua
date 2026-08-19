@@ -46,10 +46,9 @@ struct LibraryView: View {
                 .padding(.bottom, 28)
             }
             .navigationDestination(item: $selectedBook) { book in
-                // Readium is the primary EPUB engine. It reads the original
-                // publication (spine, TOC, CSS and images) instead of flattening
-                // a book into extracted text.
-                ReadiumReaderView(book: book)
+                // Keep the established reader shell. EPUB parsing remains an
+                // implementation detail of the book source, not a new screen.
+                ReaderView(book: book)
             }
             .confirmationDialog("Delete this book?", isPresented: Binding(get: { bookToDelete != nil }, set: { if !$0 { bookToDelete = nil } })) {
                 Button("Delete", role: .destructive) { if let book = bookToDelete { library.remove(book) }; bookToDelete = nil }
