@@ -82,14 +82,6 @@ enum EPUBImporter {
             // next XHTML file are not glued to the previous paragraph.
             var document = String(data: data, encoding: .utf8) ?? ""
             let chapterTitle = titleFromHeading(in: document)
-            // The XHTML title belongs to the document metadata, not to the
-            // readable body. Keeping it here made the book title appear a
-            // second time above the first paragraph of every spine item.
-            document = document.replacingOccurrences(
-                of: "<head\\b[^>]*>[\\s\\S]*?</head>",
-                with: "",
-                options: [.regularExpression, .caseInsensitive]
-            )
             if chapterTitle != nil {
                 document = removingFirstHeading(from: document)
             }

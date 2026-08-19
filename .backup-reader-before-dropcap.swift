@@ -373,7 +373,7 @@ struct ReaderView: View {
                             )
                             .layoutPriority(2)
                     } else {
-                        WordParagraph(text: block, fontSize: readerTextSize, highlightedWord: selectedWord, highlightedSentence: selectedSentence, dropCap: entry.offset == contentBlocks.first?.offset && item.title != "Reading") { word in
+                        WordParagraph(text: block, fontSize: readerTextSize, highlightedWord: selectedWord, highlightedSentence: selectedSentence) { word in
                             selectedWord = word
                             selectedSentence = sentence(containing: word, in: block)
                             selectedTranslationText = word
@@ -413,9 +413,8 @@ struct ReaderView: View {
         var result = paragraph
         paragraph.enumerateSubstrings(in: paragraph.startIndex..<paragraph.endIndex, options: .bySentences) { substring, _, _, stop in
             guard let substring else { return }
-            let tokens = substring.lowercased().split { !$0.isLetter && !$0.isNumber }.map(String.init)
-            let wanted = word.lowercased().split { !$0.isLetter && !$0.isNumber }.joined()
-            if tokens.contains(where: { $0.split { !$0.isLetter && !$0.isNumber }.joined() == wanted }) {
+            let tokens = substring.lowercased().split { !$0.isLetter }
+            if tokens.contains(Substring(word.lowercased())) {
                 result = substring.trimmingCharacters(in: .whitespacesAndNewlines)
                 stop = true
             }
@@ -652,7 +651,6 @@ struct WordParagraph: View {
     let fontSize: Double
     let highlightedWord: String?
     let highlightedSentence: String
-    var dropCap: Bool = false
     let onWordTap: (String) -> Void
     let onSentenceLongPress: (String) -> Void
 
@@ -663,54 +661,30 @@ struct WordParagraph: View {
             ForEach(Array(words.enumerated()), id: \.offset) { index, rawWord in
                 let cleanWord = clean(rawWord)
                 let currentSentence = index < sentenceForWord.count ? sentenceForWord[index] : ""
-                let normalizedCurrent = normalize(currentSentence)
-                let normalizedSelected = normalize(highlightedSentence)
-                let isSelectedSentence = !normalizedSelected.isEmpty && normalizedCurrent == normalizedSelected
+                let normalizedCurrent = currentSentence.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                let normalizedSelected = highlightedSentence.lowercased().trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: .punctuationCharacters)
+                let isSelectedSentence = !normalizedSelected.isEmpty && normalizedCurrent.trimmingCharacters(in: .punctuationCharacters) == normalizedSelected
                 let highlightSentence = highlightedWord == nil && isSelectedSentence
-                let highlighted = ((highlightedWord == cleanWord && (highlightedSentence.isEmpty || isSelectedSentence)) || highlightSentence)
-                if dropCap && index == 0 {
-                    let word = String(rawWord)
-                    let first = String(word.prefix(1))
-                    let remainder = String(word.dropFirst())
-                    HStack(alignment: .firstTextBaseline, spacing: 0) {
-                        Text(first).font(.system(size: fontSize * 2.8, weight: .bold, design: .serif))
-                        Text(remainder + " ").font(.system(size: fontSize, design: .serif))
-                    }
+                Text(String(rawWord) + " ")
+                    .font(.system(size: fontSize, design: .serif))
                     .foregroundStyle(.primary)
-                    .background(highlighted ? Color.yellow.opacity(0.55) : Color.clear)
+                    .background(((highlightedWord == cleanWord && isSelectedSentence) || highlightSentence) ? Color.yellow.opacity(0.55) : Color.clear)
                     .contentShape(Rectangle())
                     .onTapGesture { onWordTap(clean(rawWord)) }
-                    .onLongPressGesture(minimumDuration: 0.45) { onSentenceLongPress(clean(rawWord)) }
-                } else {
-                    Text(String(rawWord) + " ")
-                        .font(.system(size: fontSize, design: .serif))
-                        .foregroundStyle(.primary)
-                        .background(highlighted ? Color.yellow.opacity(0.55) : Color.clear)
-                        .contentShape(Rectangle())
-                        .onTapGesture { onWordTap(clean(rawWord)) }
-                        .onLongPressGesture(minimumDuration: 0.45) { onSentenceLongPress(clean(rawWord)) }
-                }
+                .onLongPressGesture(minimumDuration: 0.45) { onSentenceLongPress(clean(rawWord)) }
             }
         }
     }
 
     private var sentenceMapping: [String] {
-        var sentences: [String] = []
-        text.enumerateSubstrings(in: text.startIndex..<text.endIndex, options: .bySentences) { substring, _, _, _ in
-            if let substring, !substring.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { sentences.append(substring) }
-        }
+        let sentences = text.components(separatedBy: ".").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
         return sentences.flatMap { sentence in
-            Array(repeating: sentence, count: sentence.split { !$0.isLetter && !$0.isNumber }.count)
+            Array(repeating: sentence, count: sentence.split { !$0.isLetter }.count)
         }
     }
 
     private func clean(_ word: Substring) -> String {
-        normalize(String(word))
-    }
-
-    private func normalize(_ value: String) -> String {
-        value.lowercased()
-            .replacingOccurrences(of: "[^\\p{L}\\p{N}]+", with: "", options: .regularExpression)
+        word.trimmingCharacters(in: .punctuationCharacters).lowercased()
     }
 }
 
