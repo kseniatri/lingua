@@ -790,7 +790,7 @@ struct FlowLayout: Layout {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = proposal.width ?? 300
         guard !subviews.isEmpty else { return CGSize(width: width, height: 0) }
-        let capWidth = dropCap ? min(100, width * 0.25) : 0
+        let capWidth = dropCap ? min(78, width * 0.18) : 0
         let normalHeight = subviews.dropFirst().first?.sizeThatFits(.unspecified).height ?? 20
         var x: CGFloat = dropCap ? capWidth : 0, y: CGFloat = 0, row = 0
         for (index, subview) in subviews.enumerated() {
@@ -804,7 +804,7 @@ struct FlowLayout: Layout {
     }
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         guard !subviews.isEmpty else { return }
-        let capWidth = dropCap ? min(100, bounds.width * 0.25) : 0
+        let capWidth = dropCap ? min(78, bounds.width * 0.18) : 0
         let normalHeight = subviews.dropFirst().first?.sizeThatFits(.unspecified).height ?? 20
         if dropCap {
             let capSize = subviews[0].sizeThatFits(.unspecified)
