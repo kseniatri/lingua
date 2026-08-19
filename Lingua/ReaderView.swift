@@ -89,6 +89,15 @@ struct ReaderView: View {
                 currentTitle = "Reading"
                 continue
             }
+            if line.hasPrefix("[EPUB_CHAPTER_BREAK:") && line.hasSuffix("]") {
+                flushParagraph()
+                if !current.isEmpty { sections.append((currentTitle, current)); current = [] }
+                let start = line.index(line.startIndex, offsetBy: "[EPUB_CHAPTER_BREAK:".count)
+                let end = line.index(before: line.endIndex)
+                let title = String(line[start..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+                currentTitle = title.isEmpty ? "Reading" : title
+                continue
+            }
             // EPUBs often contain ornament-only lines (a dot, bullets, or separators).
             // They are not readable content and must never become a paragraph.
             if line.range(of: "^[^[:alnum:]\\[]+$", options: .regularExpression) != nil {

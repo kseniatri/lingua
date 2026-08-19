@@ -80,7 +80,10 @@ enum EPUBImporter {
             _ = try blocking { try await archive.extract(entry) { data.append($0) } }
             // Keep each spine document separated so chapter headings from the
             // next XHTML file are not glued to the previous paragraph.
-            html += "\n\n[EPUB_SPINE_BREAK]\n\n" + (String(data: data, encoding: .utf8) ?? "") + "\n\n"
+            let document = String(data: data, encoding: .utf8) ?? ""
+            let chapterTitle = titleFromHeading(in: document)
+            let marker = chapterTitle.map { "[EPUB_CHAPTER_BREAK:\($0)]" } ?? "[EPUB_SPINE_BREAK]"
+            html += "\n\n\(marker)\n\n" + document + "\n\n"
             progress(Double(index + 1) / Double(max(entries.count, 1)))
         }
         let marked = html.replacingOccurrences(of: "<img[^>]+src=[\\\"']([^\\\"']+)[\\\"'][^>]*>", with: "\n\n[IMAGE:$1]\n\n", options: [.regularExpression, .caseInsensitive])
@@ -126,13 +129,13 @@ enum EPUBImporter {
         let itemRegex = try? NSRegularExpression(pattern: "<item\\b([^>]*)/?>", options: [.caseInsensitive])
         let refRegex = try? NSRegularExpression(pattern: "<itemref\\b([^>]*)/?>", options: [.caseInsensitive])
         guard let itemRegex, let refRegex else { return htmlEntries }
-        struct ManifestItem { let href: String; let properties: String }
+        struct ManifestItem { let id: String; let href: String; let properties: String }
         var manifest: [String: ManifestItem] = [:]
         for match in itemRegex.matches(in: opfText, range: NSRange(opfText.startIndex..., in: opfText)) {
             guard let attributesRange = Range(match.range(at: 1), in: opfText) else { continue }
             let attributes = String(opfText[attributesRange])
             guard let id = attribute("id", in: attributes), let href = attribute("href", in: attributes) else { continue }
-            manifest[id] = ManifestItem(href: href, properties: attribute("properties", in: attributes) ?? "")
+            manifest[id] = ManifestItem(id: id, href: href, properties: attribute("properties", in: attributes) ?? "")
         }
         let base = (opf.path as NSString).deletingLastPathComponent
         var ordered: [Entry] = []
@@ -140,7 +143,8 @@ enum EPUBImporter {
             guard let attributesRange = Range(match.range(at: 1), in: opfText) else { continue }
             let attributes = String(opfText[attributesRange])
             guard let idref = attribute("idref", in: attributes), let item = manifest[idref] else { continue }
-            if item.properties.split(whereSeparator: { $0 == " " || $0 == "\t" }).contains("nav") { continue }
+            let lowerHref = item.href.lowercased()
+            if item.properties.split(whereSeparator: { $0 == " " || $0 == "\t" }).contains("nav") || item.id.lowercased() == "toc" || lowerHref.contains("toc") || lowerHref.contains("nav") { continue }
             let target = normalizedArchivePath((base as NSString).appendingPathComponent(item.href))
             if let entry = allEntries.first(where: { normalizedArchivePath($0.path) == target }) { ordered.append(entry) }
         }
@@ -153,6 +157,17 @@ enum EPUBImporter {
               let match = regex.firstMatch(in: attributes, range: NSRange(attributes.startIndex..., in: attributes)),
               let range = Range(match.range(at: 1), in: attributes) else { return nil }
         return String(attributes[range]).removingPercentEncoding ?? String(attributes[range])
+    }
+
+    private static func titleFromHeading(in html: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: "<h[1-3]\\b[^>]*>([\\s\\S]*?)</h[1-3]>", options: [.caseInsensitive]),
+              let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
+              let range = Range(match.range(at: 1), in: html) else { return nil }
+        let raw = String(html[range])
+            .replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return raw.isEmpty ? nil : raw
     }
 
     private static func normalizedArchivePath(_ path: String) -> String {
