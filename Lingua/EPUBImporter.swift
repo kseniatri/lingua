@@ -80,8 +80,11 @@ enum EPUBImporter {
             _ = try blocking { try await archive.extract(entry) { data.append($0) } }
             // Keep each spine document separated so chapter headings from the
             // next XHTML file are not glued to the previous paragraph.
-            let document = String(data: data, encoding: .utf8) ?? ""
+            var document = String(data: data, encoding: .utf8) ?? ""
             let chapterTitle = titleFromHeading(in: document)
+            if chapterTitle != nil {
+                document = removingFirstHeading(from: document)
+            }
             let marker = chapterTitle.map { "[EPUB_CHAPTER_BREAK:\($0)]" } ?? "[EPUB_SPINE_BREAK]"
             html += "\n\n\(marker)\n\n" + document + "\n\n"
             progress(Double(index + 1) / Double(max(entries.count, 1)))
@@ -165,9 +168,17 @@ enum EPUBImporter {
               let range = Range(match.range(at: 1), in: html) else { return nil }
         let raw = String(html[range])
             .replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "[_—–-]{2,}", with: " ", options: .regularExpression)
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return raw.isEmpty ? nil : raw
+    }
+
+    private static func removingFirstHeading(from html: String) -> String {
+        guard let regex = try? NSRegularExpression(pattern: "<h[1-3]\\b[^>]*>[\\s\\S]*?</h[1-3]>", options: [.caseInsensitive]),
+              let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
+              let range = Range(match.range, in: html) else { return html }
+        return String(html[..<range.lowerBound]) + "\n\n" + String(html[range.upperBound...])
     }
 
     private static func normalizedArchivePath(_ path: String) -> String {
