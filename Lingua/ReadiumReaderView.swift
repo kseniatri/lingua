@@ -135,29 +135,27 @@ struct ReadiumReaderView: View {
 
     private var chrome: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button { dismiss() } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 21, weight: .medium))
-                        .frame(width: 34, height: 34)
-                }
-                Spacer(minLength: 12)
+            ZStack {
                 Text(shortTitle)
-                    .font(.system(size: 17, weight: .medium))
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
-                    .truncationMode(.middle)
-                    .frame(maxWidth: .infinity)
-                Spacer(minLength: 12)
-                Button { showSettings = true } label: {
-                    Text("AA")
-                        .font(.system(size: 19, weight: .bold))
-                        .frame(width: 42, height: 34)
+                    .frame(maxWidth: 360)
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                    Spacer()
+                    Button { showSettings = true } label: {
+                        Image(systemName: "textformat.size")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
                 }
             }
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 12)
             .background(Color(.systemBackground).opacity(0.94))
             Spacer()
             if showPageScrubber {
@@ -174,7 +172,7 @@ struct ReadiumReaderView: View {
             }
             HStack(spacing: 9) {
                 Text("\(min(model.pageIndex + 1, max(model.positions.count, 1))) of \(max(model.positions.count, 1))")
-                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                    .font(.system(size: 14, design: .monospaced))
                 ProgressView(value: Double(model.pageIndex + 1), total: Double(max(model.positions.count, 1)))
                     .progressViewStyle(.linear)
                     .tint(.teal)
@@ -185,7 +183,7 @@ struct ReadiumReaderView: View {
             .contentShape(Rectangle())
             .onTapGesture { withAnimation(.easeOut(duration: 0.18)) { showPageScrubber.toggle() } }
             .padding(.top, 9)
-            .padding(.bottom, 22)
+            .padding(.bottom, 24)
             .background(Color(.systemBackground).opacity(0.94))
         }
     }
@@ -195,8 +193,8 @@ struct ReadiumReaderView: View {
             .replacingOccurrences(of: "_", with: " ")
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        if normalized.count <= 34 { return normalized }
-        return String(normalized.prefix(31)).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
+        if normalized.count <= 20 { return normalized }
+        return String(normalized.prefix(20)) + "…"
     }
 
     private var chapterList: some View {
@@ -209,7 +207,15 @@ struct ReadiumReaderView: View {
 
     private var settings: some View {
         NavigationStack {
-            Form { Section("Text") { Slider(value: $fontSize, in: 80...130, step: 5) { _ in model.setFontSize(fontSize) }; Text("Размер: \(Int(fontSize))%") } }
+            Form {
+                Section("Text size") {
+                    Slider(value: $fontSize, in: 80...130, step: 5) { _ in model.setFontSize(fontSize) }
+                    Text("Размер: \(Int(fontSize))%")
+                }
+                Section("Appearance") {
+                    Label("Automatic theme", systemImage: "circle.lefthalf.filled")
+                }
+            }
                 .navigationTitle("Reading").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showSettings = false } } }
         }
     }
